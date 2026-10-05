@@ -1,0 +1,6 @@
+{
+  "name": "AI Studio",
+  "description": "Google AI Studio clone to build ideas with Gemini, explore prompts, and test apps in live two-panel workspace",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
