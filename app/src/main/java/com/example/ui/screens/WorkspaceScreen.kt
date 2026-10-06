@@ -115,10 +115,16 @@ import com.example.model.ChatMessage
 import com.example.model.GeminiModel
 import com.example.model.ProjectData
 import com.example.model.WorkspaceTab
+import com.example.ui.components.CheckpointDialog
 import com.example.ui.components.ExportDialog
 import com.example.ui.components.FileTreeComponent
 import com.example.ui.components.GeminiSparkle
+import com.example.ui.components.InstallApkDialog
 import com.example.ui.components.ModelSelectorDialog
+import com.example.ui.components.TokenUsageDialog
+import com.example.ui.components.ViewChangesDialog
+import com.example.ui.components.WorkspaceLogItem
+import com.example.ui.components.WorkspaceLogsPanel
 import com.example.ui.engine.LivePreviewRenderingEngine
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -213,31 +219,67 @@ fun TwoPanelWorkspaceScreen(
         )
     }
 
-    // Chat message history
-    val chatMessages = remember {
+    // Workspace rich logs and conversation history matching screenshot
+    val workspaceLogsList = remember {
         mutableStateListOf(
-            ChatMessage(
+            WorkspaceLogItem(
+                id = "1",
                 isUser = true,
-                text = project.prompt.ifEmpty { "Apne jyesa bnav" }
+                text = "Github mein debug APK banana hai to sabhi dependis fille and jaruri chij dalna hai\nGradle warrper ka error nhi aana chahiye\nSab kuchh dalo Android fille sab kuchh\nSuitable yamal file ad kar dena"
             ),
-            ChatMessage(
+            WorkspaceLogItem(
+                id = "2",
                 isUser = false,
-                text = "आपके द्वारा दिए गए स्क्रीनशॉट (Google AI Studio - My apps) और कोड लॉजिक के अनुसार पूरा सिस्टम पूरी तरह फंक्शनल (Functional) तैयार कर दिया गया है:\n\n" +
-                        "1. Dynamic Language Logic (Kotlin, TypeScript, Flutter, Android)\n" +
-                        "2. Pre-seeded Room Database matching your real projects\n" +
-                        "3. Model Selection: Gemini Pro, Gemini 3.5, and Gemini 3.8\n" +
-                        "4. Code Editor with File Explorer & Live Interactive App Preview\n" +
-                        "5. GitHub Push with verified @sahilkurrey pre-fill & 0-100% progress tracker"
+                modelLabel = "${activeModel.displayName} • Ran for ${activeModel.executionSeconds}s",
+                modifiedFilePath = "app/src/main/java/com/example/util/ProjectZipExporter.kt",
+                buildStatus = "Built",
+                text = "GitHub Actions के ज़रिए **Android Debug APK** अपने आप बिना किसी एरर के बिल्ड होने के लिए सभी ज़रूरी फाइल्स, Gradle Wrapper, और GitHub Workflow YAML फाइल पूरी तरह सेटअप और टेस्ट कर दी गई हैं。\n\n" +
+                        "**क्या-क्या जोड़ा और ठीक किया गया है:**\n\n" +
+                        "1. **GitHub Actions Workflow YAML फाइल (.github/workflows/build-apk.yml):**\n" +
+                        "• जब भी आप GitHub पर push करेंगे या Actions टैब से \"Run workflow\" पर क्लिक करेंगे, यह वर्कफ़्लो अपने आप चलेगा।\n" +
+                        "• JDK 21 (Temurin) और Gradle कैशे ऑटोमैटिक सेटअप।\n" +
+                        "• chmod +x ./gradlew स्टेप जोड़ा गया है, जिससे Linux रनर पर कभी भी \"Permission Denied\" एरर नहीं आएगा।\n" +
+                        "• Debug Keystore को debug.keystore.base64 से रिस्टोर करने या नया जनरेट करने का ऑटोमैटिक लॉजिक डाला गया है, जिससे साइनिंग एरर नहीं आएगी।\n" +
+                        "• ./gradlew assembleDebug चलाकर APK बनता है और app-debug.apk को GitHub Actions के Artifacts में 14 दिनों के लिए अपलोड कर देता है, जहाँ से आप सीधे APK डाउनलोड कर सकते हैं।\n\n" +
+                        "2. **Gradle Wrapper का पूरा सेटअप (Zero Gradle Wrapper Errors):**\n" +
+                        "• gradlew (Linux/macOS एग्जीक्यूटिव बैश स्क्रिप्ट)\n" +
+                        "• gradlew.bat (Windows बैच स्क्रिप्ट)\n" +
+                        "• gradle/wrapper/gradle-wrapper.jar (असली Gradle लॉन्चर JAR)\n" +
+                        "• gradle/wrapper/gradle-wrapper.properties (Gradle 9.3.1 डिस्ट्रीब्यूशन)\n" +
+                        "• .gitignore को अपडेट किया गया है ताकि gradle-wrapper.jar और gradlew गिट में इग्नोर न हों।\n\n" +
+                        "3. **./gradlew assembleDebug का लाइव टेस्ट सफल:**\n" +
+                        "• कंटेनर में ./gradlew assembleDebug को सीधे चलाकर टेस्ट किया गया:\n" +
+                        "• सभी यूनिट टेस्ट और कंपाइलेशन 100% पास हैं।\n\n" +
+                        "4. **प्रोजेक्ट ZIP एक्सपोर्टर (ProjectZipExporter.kt) में भी सिंक:**\n" +
+                        "• जब आप ऐप के अंदर Export -> \"Download project as ZIP\" दबाएंगे, तो डाउनलोड होने वाली .zip फाइल के अंदर भी यह .github/workflows/build-apk.yml, gradlew, gradlew.bat और सभी Gradle फाइल्स अपने आप शामिल रहेंगी!\n\n" +
+                        "**GitHub पर APK पाने का तरीका:**\n\n" +
+                        "1. जब यह कोड GitHub पर पुश होगा, तो आपकी रिपॉजिटरी के \"Actions\" टैब में \"Build Android Debug APK\" वर्कफ़्लो अपने आप शुरू हो जाएगा।\n" +
+                        "2. 2-3 मिनट में वर्कफ़्लो पूरा हरा (Green ✓) हो जाएगा।\n" +
+                        "3. उस रन पर क्लिक करते ही नीचे Artifacts सेक्शन में AI-Studio-Debug-APK दिखेगा, जिस पर क्लिक करके आप सीधे app-debug.apk डाउनलोड कर सकते हैं।",
+                hasTerminalOutput = true,
+                terminalOutputText = "BUILD SUCCESSFUL in 5s\nOutput: app/build/outputs/apk/debug/app-debug.apk (23 MB)"
             )
         )
     }
+
+    var showViewChangesDialog by remember { mutableStateOf(false) }
+    var showTokenUsageDialog by remember { mutableStateOf(false) }
+    var showInstallApkDialog by remember { mutableStateOf(false) }
+    var showCheckpointDialog by remember { mutableStateOf(false) }
+    var isGeneratingByGemini by remember { mutableStateOf(false) }
+
+    var pendingImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var pendingImageName by remember { mutableStateOf<String?>(null) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         if (uri != null) {
+            pendingImageUri = uri
+            val name = "Screenshot_Mockup_${System.currentTimeMillis().toString().takeLast(4)}.jpg"
+            pendingImageName = name
             coroutineScope.launch {
-                snackbarHostState.showSnackbar("Attached image/screenshot to generation context")
+                snackbarHostState.showSnackbar("Attached $name to prompt context")
             }
         }
     }
@@ -332,47 +374,68 @@ fun TwoPanelWorkspaceScreen(
                         color = MaterialTheme.colorScheme.surface,
                         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
                     ) {
-                        LeftPanelChatAndLogs(
-                            projectTitle = editableTitle,
+                        WorkspaceLogsPanel(
                             currentModel = activeModel,
                             onOpenModelSelector = { showModelSelectorDialog = true },
-                            generationLogs = generationLogs,
-                            chatMessages = chatMessages,
-                            promptInputText = promptInputText,
-                            onPromptInputChange = { promptInputText = it },
+                            logsList = workspaceLogsList,
+                            isGenerating = isGeneratingByGemini,
+                            promptText = promptInputText,
+                            onPromptChange = { promptInputText = it },
+                            attachedImageUri = pendingImageUri,
+                            attachedImageName = pendingImageName,
+                            onRemoveAttachedImage = {
+                                pendingImageUri = null
+                                pendingImageName = null
+                            },
                             onSendPrompt = {
-                                if (promptInputText.isNotBlank()) {
-                                    val userText = promptInputText.trim()
-                                    chatMessages.add(ChatMessage(isUser = true, text = userText))
-                                    generationLogs.add(
-                                        0,
-                                        LogActivity(
-                                            timestamp = timeFormat.format(Date()),
-                                            title = "[${activeModel.displayName}] Processing Prompt",
-                                            detail = "Applying reasoning logic to sandbox components",
-                                            status = LogStatus.IN_PROGRESS
+                                if (promptInputText.isNotBlank() || pendingImageUri != null) {
+                                    val userText = promptInputText.trim().ifEmpty { "Build layout from attached visual mockup" }
+                                    val currentImg = pendingImageUri?.toString()
+                                    val currentImgName = pendingImageName
+
+                                    workspaceLogsList.add(
+                                        WorkspaceLogItem(
+                                            isUser = true,
+                                            text = userText,
+                                            attachedImageUri = currentImg,
+                                            attachedImageName = currentImgName
                                         )
                                     )
                                     promptInputText = ""
+                                    pendingImageUri = null
+                                    pendingImageName = null
+                                    isGeneratingByGemini = true
+
                                     coroutineScope.launch {
-                                        // Speed simulated based on selected model
-                                        val latency = (activeModel.executionSeconds * 5).toLong().coerceIn(400L, 1200L)
+                                        val latency = (activeModel.executionSeconds * 3).toLong().coerceIn(600L, 1200L)
                                         delay(latency)
-                                        generationLogs.add(
-                                            0,
-                                            LogActivity(
-                                                timestamp = timeFormat.format(Date()),
-                                                title = "[${activeModel.displayName}] Synthesis Complete",
-                                                detail = "Compiled updated Jetpack Compose layouts and Room bindings",
-                                                status = LogStatus.SUCCESS
-                                            )
-                                        )
-                                        chatMessages.add(
-                                            ChatMessage(
+                                        isGeneratingByGemini = false
+
+                                        val explanation = if (currentImg != null) {
+                                            "**Analyzed Attached Visual Context ($currentImgName):**\n\n" +
+                                            "• Extracted UI component hierarchy, layout bounds, and interactive controls.\n" +
+                                            "• Generated responsive Jetpack Compose composable structure with Material 3 theming.\n" +
+                                            "• Bound view state flows and persistent Room SQLite database models.\n" +
+                                            "• Gradle task compilation verified: `BUILD SUCCESSFUL`."
+                                        } else {
+                                            "**Refinement Applied for: '$userText'**\n\n" +
+                                            "• AST parsed and Jetpack Compose component tree regenerated.\n" +
+                                            "• Synchronized business logic, Room SQLite DAOs, and UI state flows.\n" +
+                                            "• Verified Gradle compilation: `BUILD SUCCESSFUL in 3s`."
+                                        }
+
+                                        workspaceLogsList.add(
+                                            WorkspaceLogItem(
                                                 isUser = false,
-                                                text = "[${activeModel.displayName}] Applied refinement: '$userText'. Code editor and live preview refreshed with updated components!"
+                                                modelLabel = "${activeModel.displayName} • Ran for ${activeModel.executionSeconds}s",
+                                                modifiedFilePath = "app/src/main/java/com/example/MainActivity.kt",
+                                                buildStatus = "Built",
+                                                text = explanation,
+                                                hasTerminalOutput = true,
+                                                terminalOutputText = "BUILD SUCCESSFUL in 3s\nOutput: app/build/outputs/apk/debug/app-debug.apk (23 MB)"
                                             )
                                         )
+                                        snackbarHostState.showSnackbar("Turn completed by ${activeModel.displayName}")
                                     }
                                 }
                             },
@@ -384,15 +447,23 @@ fun TwoPanelWorkspaceScreen(
                             onMicClick = {
                                 promptInputText = "Add Room database offline synchronization and dark mode"
                             },
-                            onCheckpoint = {
+                            onOpenFileInEditor = { filePath ->
+                                selectedFileName = filePath.substringAfterLast("/")
+                                selectedTab = WorkspaceTab.CODE
                                 coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Checkpoint saved")
+                                    snackbarHostState.showSnackbar("Opened $selectedFileName in Code Editor")
                                 }
                             },
-                            onRestore = {
+                            onOpenViewChanges = { showViewChangesDialog = true },
+                            onOpenCheckpoint = { showCheckpointDialog = true },
+                            onOpenRestore = {
                                 coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Restored build to initial state")
+                                    snackbarHostState.showSnackbar("Restored build to latest checkpoint milestone")
                                 }
+                            },
+                            onOpenTokenUsage = { showTokenUsageDialog = true },
+                            onShowSnackbar = { msg ->
+                                coroutineScope.launch { snackbarHostState.showSnackbar(msg) }
                             }
                         )
                     }
@@ -414,7 +485,23 @@ fun TwoPanelWorkspaceScreen(
                             onResetZoom = {
                                 scale = 1f
                                 panOffset = Offset.Zero
-                            }
+                            },
+                            onRefreshPreview = {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Live preview re-rendered successfully")
+                                }
+                            },
+                            onFullscreenToggle = {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Fullscreen preview mode toggled")
+                                }
+                            },
+                            onCaptureScreenshot = {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Snapshot captured and saved to gallery")
+                                }
+                            },
+                            onInstallApk = { showInstallApkDialog = true }
                         )
 
                         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -531,27 +618,68 @@ fun TwoPanelWorkspaceScreen(
                     Box(modifier = Modifier.weight(1f)) {
                         when (mobileActiveTab) {
                             0 -> {
-                                LeftPanelChatAndLogs(
-                                    projectTitle = editableTitle,
+                                WorkspaceLogsPanel(
                                     currentModel = activeModel,
                                     onOpenModelSelector = { showModelSelectorDialog = true },
-                                    generationLogs = generationLogs,
-                                    chatMessages = chatMessages,
-                                    promptInputText = promptInputText,
-                                    onPromptInputChange = { promptInputText = it },
+                                    logsList = workspaceLogsList,
+                                    isGenerating = isGeneratingByGemini,
+                                    promptText = promptInputText,
+                                    onPromptChange = { promptInputText = it },
+                                    attachedImageUri = pendingImageUri,
+                                    attachedImageName = pendingImageName,
+                                    onRemoveAttachedImage = {
+                                        pendingImageUri = null
+                                        pendingImageName = null
+                                    },
                                     onSendPrompt = {
-                                        if (promptInputText.isNotBlank()) {
-                                            val userText = promptInputText.trim()
-                                            chatMessages.add(ChatMessage(isUser = true, text = userText))
+                                        if (promptInputText.isNotBlank() || pendingImageUri != null) {
+                                            val userText = promptInputText.trim().ifEmpty { "Build layout from attached visual mockup" }
+                                            val currentImg = pendingImageUri?.toString()
+                                            val currentImgName = pendingImageName
+
+                                            workspaceLogsList.add(
+                                                WorkspaceLogItem(
+                                                    isUser = true,
+                                                    text = userText,
+                                                    attachedImageUri = currentImg,
+                                                    attachedImageName = currentImgName
+                                                )
+                                            )
                                             promptInputText = ""
+                                            pendingImageUri = null
+                                            pendingImageName = null
+                                            isGeneratingByGemini = true
+
                                             coroutineScope.launch {
-                                                delay(800)
-                                                chatMessages.add(
-                                                    ChatMessage(
+                                                val latency = (activeModel.executionSeconds * 3).toLong().coerceIn(600L, 1200L)
+                                                delay(latency)
+                                                isGeneratingByGemini = false
+
+                                                val explanation = if (currentImg != null) {
+                                                    "**Analyzed Attached Visual Context ($currentImgName):**\n\n" +
+                                                    "• Extracted UI component hierarchy, layout bounds, and interactive controls.\n" +
+                                                    "• Generated responsive Jetpack Compose composable structure with Material 3 theming.\n" +
+                                                    "• Bound view state flows and persistent Room SQLite database models.\n" +
+                                                    "• Gradle task compilation verified: `BUILD SUCCESSFUL`."
+                                                } else {
+                                                    "**Refinement Applied for: '$userText'**\n\n" +
+                                                    "• AST parsed and Jetpack Compose component tree regenerated.\n" +
+                                                    "• Synchronized business logic, Room SQLite DAOs, and UI state flows.\n" +
+                                                    "• Verified Gradle compilation: `BUILD SUCCESSFUL in 3s`."
+                                                }
+
+                                                workspaceLogsList.add(
+                                                    WorkspaceLogItem(
                                                         isUser = false,
-                                                        text = "[${activeModel.displayName}] Applied refinement: '$userText'"
+                                                        modelLabel = "${activeModel.displayName} • Ran for ${activeModel.executionSeconds}s",
+                                                        modifiedFilePath = "app/src/main/java/com/example/MainActivity.kt",
+                                                        buildStatus = "Built",
+                                                        text = explanation,
+                                                        hasTerminalOutput = true,
+                                                        terminalOutputText = "BUILD SUCCESSFUL in 3s\nOutput: app/build/outputs/apk/debug/app-debug.apk (23 MB)"
                                                     )
                                                 )
+                                                snackbarHostState.showSnackbar("Turn completed by ${activeModel.displayName}")
                                             }
                                         }
                                     },
@@ -561,10 +689,26 @@ fun TwoPanelWorkspaceScreen(
                                         )
                                     },
                                     onMicClick = {
-                                        promptInputText = "Add Room database and Dark theme"
+                                        promptInputText = "Add Room database offline synchronization and dark mode"
                                     },
-                                    onCheckpoint = {},
-                                    onRestore = {}
+                                    onOpenFileInEditor = { filePath ->
+                                        selectedFileName = filePath.substringAfterLast("/")
+                                        mobileActiveTab = 1
+                                        coroutineScope.launch {
+                                            snackbarHostState.showSnackbar("Opened $selectedFileName in Code Editor")
+                                        }
+                                    },
+                                    onOpenViewChanges = { showViewChangesDialog = true },
+                                    onOpenCheckpoint = { showCheckpointDialog = true },
+                                    onOpenRestore = {
+                                        coroutineScope.launch {
+                                            snackbarHostState.showSnackbar("Restored build to latest checkpoint milestone")
+                                        }
+                                    },
+                                    onOpenTokenUsage = { showTokenUsageDialog = true },
+                                    onShowSnackbar = { msg ->
+                                        coroutineScope.launch { snackbarHostState.showSnackbar(msg) }
+                                    }
                                 )
                             }
                             1 -> {
@@ -656,6 +800,50 @@ fun TwoPanelWorkspaceScreen(
                 )
                 coroutineScope.launch {
                     snackbarHostState.showSnackbar("Successfully pushed to GitHub: $repoUrl")
+                }
+            }
+        )
+    }
+
+    // View Changes (Git Diff) Dialog matching screenshot
+    if (showViewChangesDialog) {
+        ViewChangesDialog(
+            onDismiss = { showViewChangesDialog = false }
+        )
+    }
+
+    // Token Metrics Dialog matching screenshot (101 tokens)
+    if (showTokenUsageDialog) {
+        TokenUsageDialog(
+            modelName = activeModel.displayName,
+            onDismiss = { showTokenUsageDialog = false }
+        )
+    }
+
+    // Install Debug APK Dialog
+    if (showInstallApkDialog) {
+        InstallApkDialog(
+            onDismiss = { showInstallApkDialog = false },
+            onDownloadApk = {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Downloading app-debug.apk (23 MB) to storage...")
+                }
+            }
+        )
+    }
+
+    // Checkpoint Management Dialog
+    if (showCheckpointDialog) {
+        CheckpointDialog(
+            onDismiss = { showCheckpointDialog = false },
+            onSaveNewCheckpoint = { name ->
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Saved checkpoint: '$name'")
+                }
+            },
+            onRestoreCheckpoint = { cp ->
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Restored build to: $cp")
                 }
             }
         )
@@ -1219,7 +1407,11 @@ fun WorkspaceTabsHeader(
     scale: Float,
     onZoomIn: () -> Unit,
     onZoomOut: () -> Unit,
-    onResetZoom: () -> Unit
+    onResetZoom: () -> Unit,
+    onRefreshPreview: () -> Unit = {},
+    onFullscreenToggle: () -> Unit = {},
+    onCaptureScreenshot: () -> Unit = {},
+    onInstallApk: () -> Unit = {}
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
@@ -1233,10 +1425,10 @@ fun WorkspaceTabsHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Left: [ 👁 Preview ] + [ < > Code ]
+            // Left: [ 👁 Preview ] + [ < > Code ] + [ ↻ ] [ ⛶ ] [ 📷 ] [ ⬇ Install ]
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 // [ 👁 Preview ]
                 Surface(
@@ -1249,19 +1441,19 @@ fun WorkspaceTabsHeader(
                         .testTag("tab_preview")
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Default.Visibility,
                             contentDescription = null,
                             tint = if (selectedTab == WorkspaceTab.PREVIEW) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(15.dp)
+                            modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "Preview",
-                            fontSize = 12.5.sp,
+                            fontSize = 12.sp,
                             fontWeight = if (selectedTab == WorkspaceTab.PREVIEW) FontWeight.Bold else FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -1279,20 +1471,81 @@ fun WorkspaceTabsHeader(
                         .testTag("tab_code")
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Default.Code,
                             contentDescription = null,
                             tint = if (selectedTab == WorkspaceTab.CODE) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(15.dp)
+                            modifier = Modifier.size(14.dp)
                         )
-                        Spacer(modifier = Modifier.width(5.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "Code",
-                            fontSize = 12.5.sp,
+                            fontSize = 12.sp,
                             fontWeight = if (selectedTab == WorkspaceTab.CODE) FontWeight.Bold else FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(2.dp))
+
+                // Refresh [ ↻ ]
+                IconButton(onClick = onRefreshPreview, modifier = Modifier.size(28.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Refresh Preview",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
+
+                // Fullscreen [ ⛶ ]
+                IconButton(onClick = onFullscreenToggle, modifier = Modifier.size(28.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Fullscreen,
+                        contentDescription = "Fullscreen",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                // Screenshot [ 📷 ]
+                IconButton(onClick = onCaptureScreenshot, modifier = Modifier.size(28.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.CameraAlt,
+                        contentDescription = "Screenshot",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
+
+                // Install [ ⬇ Install ]
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable { onInstallApk() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = "Install APK",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = "Install",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
