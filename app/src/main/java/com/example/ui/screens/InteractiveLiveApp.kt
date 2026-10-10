@@ -30,12 +30,16 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -52,6 +56,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -77,7 +82,18 @@ fun InteractiveLiveApp(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        when (project.previewType) {
+        val detected = com.example.util.AppCodeSynthesizer.detectPreviewType(project.prompt.ifEmpty { project.title })
+        val effectiveType = if (project.previewType in listOf("GOOGLE_DRIVE", "GOOGLE_SHEETS", "GMAIL")) {
+            project.previewType
+        } else {
+            detected
+        }
+
+        when (effectiveType) {
+            "LOGIN" -> InteractiveLoginSandbox(appTitle = project.title)
+            "CALCULATOR" -> InteractiveCalculatorSandbox(appTitle = project.title)
+            "WEATHER" -> InteractiveWeatherSandbox(appTitle = project.title)
+            "COUNTER" -> InteractiveCounterSandbox(appTitle = project.title)
             "GOOGLE_DRIVE" -> InteractiveDriveApp()
             "GOOGLE_SHEETS" -> InteractiveSheetsApp()
             "GMAIL" -> InteractiveGmailApp()
@@ -563,3 +579,270 @@ fun InteractiveGmailApp() {
         }
     }
 }
+
+// -------------------------------------------------------------
+// Interactive Login Sandbox
+// -------------------------------------------------------------
+@Composable
+fun InteractiveLoginSandbox(appTitle: String) {
+    var email by remember { mutableStateOf("sahil@example.com") }
+    var password by remember { mutableStateOf("••••••••") }
+    var isLoggedIn by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        if (isLoggedIn) {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                modifier = Modifier.fillMaxWidth().padding(8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("✓ Authenticated", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(email, fontSize = 13.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Button(onClick = { isLoggedIn = false }) {
+                        Text("Sign Out")
+                    }
+                }
+            }
+        } else {
+            Text(
+                text = appTitle,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = "Live Interactive Authentication Sandbox",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
+            )
+
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
+                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password") },
+                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Button(
+                onClick = { isLoggedIn = true },
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) {
+                Text("Sign In (Interactive)", fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+// -------------------------------------------------------------
+// Interactive Calculator Sandbox
+// -------------------------------------------------------------
+@Composable
+fun InteractiveCalculatorSandbox(appTitle: String) {
+    var display by remember { mutableStateOf("0") }
+    var operand1 by remember { mutableStateOf<Double?>(null) }
+    var pendingOp by remember { mutableStateOf<String?>(null) }
+
+    fun onNumber(n: String) {
+        display = if (display == "0") n else display + n
+    }
+
+    fun onOp(op: String) {
+        operand1 = display.toDoubleOrNull()
+        pendingOp = op
+        display = "0"
+    }
+
+    fun onEqual() {
+        val op1 = operand1 ?: return
+        val op2 = display.toDoubleOrNull() ?: return
+        val res = when (pendingOp) {
+            "+" -> op1 + op2
+            "-" -> op1 - op2
+            "×" -> op1 * op2
+            "÷" -> if (op2 != 0.0) op1 / op2 else Double.NaN
+            else -> op2
+        }
+        display = if (res.isNaN()) "Error" else if (res % 1.0 == 0.0) res.toLong().toString() else res.toString()
+        operand1 = null
+        pendingOp = null
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(14.dp),
+        verticalArrangement = Arrangement.Bottom
+    ) {
+        Surface(
+            shape = RoundedCornerShape(14.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+        ) {
+            Text(
+                text = display,
+                fontSize = 36.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(16.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        val buttons = listOf(
+            listOf("C", "±", "%", "÷"),
+            listOf("7", "8", "9", "×"),
+            listOf("4", "5", "6", "-"),
+            listOf("1", "2", "3", "+"),
+            listOf("0", ".", "=")
+        )
+
+        buttons.forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                row.forEach { btn ->
+                    val weight = if (btn == "0") 2f else 1f
+                    Button(
+                        onClick = {
+                            when (btn) {
+                                "C" -> { display = "0"; operand1 = null; pendingOp = null }
+                                "+", "-", "×", "÷" -> onOp(btn)
+                                "=" -> onEqual()
+                                else -> onNumber(btn)
+                            }
+                        },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(weight).height(48.dp),
+                        colors = if (btn in listOf("+", "-", "×", "÷", "=")) {
+                            ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        } else {
+                            ButtonDefaults.filledTonalButtonColors()
+                        }
+                    ) {
+                        Text(btn, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// -------------------------------------------------------------
+// Interactive Weather Sandbox
+// -------------------------------------------------------------
+@Composable
+fun InteractiveWeatherSandbox(appTitle: String) {
+    var city by remember { mutableStateOf("New Delhi") }
+    var temperature by remember { mutableIntStateOf(29) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(city, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        Text("Sunny • Real-time Sandbox", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("${temperature}°C", fontSize = 48.sp, fontWeight = FontWeight.ExtraBold)
+                Text("Feels like ${temperature + 2}°C", fontSize = 13.sp)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = { temperature-- }) { Text("-1°C") }
+            Button(onClick = { temperature++ }) { Text("+1°C") }
+        }
+    }
+}
+
+// -------------------------------------------------------------
+// Interactive Counter Sandbox
+// -------------------------------------------------------------
+@Composable
+fun InteractiveCounterSandbox(appTitle: String) {
+    var count by remember { mutableIntStateOf(0) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(appTitle, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier.size(130.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = count.toString(),
+                    fontSize = 46.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Button(onClick = { count-- }) {
+                Icon(Icons.Default.Remove, contentDescription = "Decrement")
+            }
+            OutlinedButton(onClick = { count = 0 }) {
+                Icon(Icons.Default.Refresh, contentDescription = "Reset")
+            }
+            Button(onClick = { count++ }) {
+                Icon(Icons.Default.Add, contentDescription = "Increment")
+            }
+        }
+    }
+}
+

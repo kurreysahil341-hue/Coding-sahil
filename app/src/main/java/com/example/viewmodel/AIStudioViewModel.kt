@@ -134,12 +134,17 @@ class AIStudioViewModel(application: Application) : AndroidViewModel(application
 
         val attachmentsCount = _attachedFiles.value.size
 
-        // Determine app type & title
-        val (title, category, previewType) = when {
-            prompt.contains("Drive", ignoreCase = true) -> Triple("Google Drive Sync", "Integration", "GOOGLE_DRIVE")
-            prompt.contains("Sheet", ignoreCase = true) -> Triple("Sheets Financial Grid", "Productivity", "GOOGLE_SHEETS")
-            prompt.contains("Gmail", ignoreCase = true) || prompt.contains("Email", ignoreCase = true) -> Triple("Gmail Triage Inbox", "Communication", "GMAIL")
-            else -> Triple("Android Sprint Board", "Android App", "ANDROID_APP")
+        // Determine app type & title using AppCodeSynthesizer
+        val detected = com.example.util.AppCodeSynthesizer.detectPreviewType(prompt)
+        val (title, category, previewType) = when (detected) {
+            "GOOGLE_DRIVE" -> Triple("Google Drive Sync", "Integration", "GOOGLE_DRIVE")
+            "GOOGLE_SHEETS" -> Triple("Sheets Financial Grid", "Productivity", "GOOGLE_SHEETS")
+            "GMAIL" -> Triple("Gmail Triage Inbox", "Communication", "GMAIL")
+            "LOGIN" -> Triple("User Auth & Login", "Security", "LOGIN")
+            "CALCULATOR" -> Triple("Smart Calculator", "Utility", "CALCULATOR")
+            "WEATHER" -> Triple("Live Weather App", "Weather", "WEATHER")
+            "COUNTER" -> Triple("Interactive Counter", "Utility", "COUNTER")
+            else -> Triple("Android Compose App", "Android App", detected)
         }
 
         val project = ProjectData(
@@ -148,7 +153,7 @@ class AIStudioViewModel(application: Application) : AndroidViewModel(application
             prompt = prompt,
             category = category,
             previewType = previewType,
-            code = generateCodeSnippet(title, previewType)
+            code = com.example.util.AppCodeSynthesizer.synthesizeAppCode(prompt)
         )
 
         _activeProject.value = project

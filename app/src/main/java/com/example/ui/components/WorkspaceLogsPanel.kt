@@ -26,6 +26,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -118,6 +121,10 @@ fun WorkspaceLogsPanel(
 ) {
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+
+    androidx.compose.runtime.LaunchedEffect(logsList.size, isGenerating) {
+        scrollState.animateScrollTo(scrollState.maxValue)
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         // 1. Header Bar matching screenshot: [ ✦ Gemini ▾ ] [ 🔑 Key ] [ + ] [ ... ]
@@ -804,6 +811,35 @@ fun WorkspaceBottomInputBar(
                     }
                 }
 
+                // Quick prompt suggestions if input empty
+                if (promptText.isEmpty() && attachedImageUri == null) {
+                    val quickPrompts = listOf("Create Login Screen", "Calculator App", "Weather Forecast", "Counter App", "Todo & Notes")
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 4.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        quickPrompts.forEach { qp ->
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
+                                modifier = Modifier.clickable { onPromptChange(qp) }
+                            ) {
+                                Text(
+                                    text = qp,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // Text input
                 Box(
                     modifier = Modifier
@@ -820,6 +856,8 @@ fun WorkspaceBottomInputBar(
                     BasicTextField(
                         value = promptText,
                         onValueChange = onPromptChange,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                        keyboardActions = KeyboardActions(onSend = { if (canSend) onSend() }),
                         textStyle = MaterialTheme.typography.bodyMedium.copy(
                             fontSize = 12.5.sp,
                             color = MaterialTheme.colorScheme.onSurface
@@ -855,22 +893,20 @@ fun WorkspaceBottomInputBar(
                             )
                         }
 
-                        Surface(
-                            shape = CircleShape,
-                            color = if (canSend) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                        IconButton(
+                            onClick = { if (canSend) onSend() },
+                            enabled = canSend,
                             modifier = Modifier
-                                .size(28.dp)
+                                .size(34.dp)
                                 .clip(CircleShape)
-                                .clickable(enabled = canSend) { onSend() }
+                                .background(if (canSend) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.ArrowUpward,
-                                    contentDescription = "Send",
-                                    tint = if (canSend) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                    modifier = Modifier.size(15.dp)
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Default.ArrowUpward,
+                                contentDescription = "Send prompt",
+                                tint = if (canSend) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
                     }
                 }
