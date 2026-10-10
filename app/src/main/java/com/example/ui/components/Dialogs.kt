@@ -23,11 +23,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -132,8 +136,10 @@ fun ApiKeyDialog(
     onSaveKey: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var keyText by remember { mutableStateOf(currentKey) }
     var isKeyVisible by remember { mutableStateOf(false) }
+    val isValidFormat = keyText.trim().startsWith("AIza") && keyText.trim().length >= 30
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -143,46 +149,121 @@ fun ApiKeyDialog(
                     imageVector = Icons.Default.Key,
                     contentDescription = null,
                     tint = Color(0xFF10B981),
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Gemini API Credentials", fontWeight = FontWeight.Bold)
+                Text("Gemini API Key Box", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    text = "Configure your Google AI Studio API key. Secrets are securely stored locally on this device.",
+                    text = "Enter your Google AI Studio API key below to enable real-time Gemini AI code synthesis:",
                     style = MaterialTheme.typography.bodyMedium
                 )
 
                 OutlinedTextField(
                     value = keyText,
                     onValueChange = { keyText = it },
-                    label = { Text("API Key") },
-                    placeholder = { Text("AIzaSy...") },
+                    label = { Text("Gemini API Key") },
+                    placeholder = { Text("Paste AIzaSy... here") },
                     visualTransformation = if (isKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
-                        IconButton(onClick = { isKeyVisible = !isKeyVisible }) {
-                            Icon(
-                                imageVector = if (isKeyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = if (isKeyVisible) "Hide key" else "Show key"
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { isKeyVisible = !isKeyVisible }) {
+                                Icon(
+                                    imageVector = if (isKeyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    contentDescription = if (isKeyVisible) "Hide key" else "Show key"
+                                )
+                            }
                         }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
 
-                Text(
-                    text = "Tip: In production environments, configure GEMINI_API_KEY in the AI Studio Secrets panel.",
-                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                )
+                // Quick Action Buttons: Paste & Clear
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                            val clipData = clipboard?.primaryClip
+                            if (clipData != null && clipData.itemCount > 0) {
+                                val pasteText = clipData.getItemAt(0).text?.toString() ?: ""
+                                if (pasteText.isNotBlank()) {
+                                    keyText = pasteText.trim()
+                                }
+                            }
+                        }
+                    ) {
+                        Text("📋 Paste Key", fontSize = 12.sp)
+                    }
+
+                    if (keyText.isNotBlank()) {
+                        OutlinedButton(
+                            onClick = { keyText = "" }
+                        ) {
+                            Text("Clear", fontSize = 12.sp)
+                        }
+                    }
+                }
+
+                // Status chip
+                if (keyText.isNotBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isValidFormat) Color(0xFF10B981).copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant,
+                        border = BorderStroke(1.dp, if (isValidFormat) Color(0xFF10B981) else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (isValidFormat) Icons.Default.CheckCircle else Icons.Default.Info,
+                                contentDescription = null,
+                                tint = if (isValidFormat) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (isValidFormat) "Valid Gemini API Key format (AIza...)" else "Key entered. Will be verified on next request.",
+                                fontSize = 11.5.sp,
+                                color = if (isValidFormat) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(8.dp)) {
+                        Text(
+                            text = "💡 Where to get free API key?",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.5.sp
+                        )
+                        Text(
+                            text = "Visit aistudio.google.com -> Click 'Get API key' -> Create key in Google AI Studio.",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    onSaveKey(keyText)
+                    onSaveKey(keyText.trim())
                     onDismiss()
                 }
             ) {
@@ -901,6 +982,199 @@ fun CheckpointDialog(
         },
         confirmButton = {
             Button(onClick = onDismiss) { Text("Done") }
+        }
+    )
+}
+
+// -------------------------------------------------------------
+// Publish Project Dialog
+// -------------------------------------------------------------
+@Composable
+fun PublishProjectDialog(
+    projectName: String,
+    onDismiss: () -> Unit,
+    onConfirmPublish: (target: String) -> Unit
+) {
+    var selectedTarget by remember { mutableStateOf("Community Gallery") }
+    var releaseNotes by remember { mutableStateOf("Initial release built with AI Studio & Gemini 3.8") }
+    val targets = listOf("Community Gallery", "My Showcase Apps", "Public GitHub Release")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.CloudUpload,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Publish '$projectName'", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Select publication channel and deployment options:",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    targets.forEach { target ->
+                        val isSelected = target == selectedTarget
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedTarget = target }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.CloudUpload,
+                                    contentDescription = null,
+                                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = target,
+                                    fontSize = 12.5.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = releaseNotes,
+                    onValueChange = { releaseNotes = it },
+                    label = { Text("Release Notes") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onConfirmPublish(selectedTarget) }) {
+                Text("Publish Now")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+// -------------------------------------------------------------
+// Feedback Dialog
+// -------------------------------------------------------------
+@Composable
+fun FeedbackDialog(
+    onDismiss: () -> Unit,
+    onSubmitFeedback: (rating: Int, category: String, comments: String) -> Unit
+) {
+    var rating by remember { mutableStateOf(5) }
+    var selectedCategory by remember { mutableStateOf("Code Quality") }
+    var comments by remember { mutableStateOf("") }
+    val categories = listOf("Code Quality", "Speed & Gemini 3.8", "UI Preview", "Bug Report")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.ThumbUp,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("AI Studio Feedback", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "Rate your experience with AI Studio code generation:",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // Rating Stars
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    (1..5).forEach { starIndex ->
+                        IconButton(onClick = { rating = starIndex }) {
+                            Icon(
+                                imageVector = if (starIndex <= rating) Icons.Default.Star else Icons.Default.StarBorder,
+                                contentDescription = "$starIndex stars",
+                                tint = if (starIndex <= rating) Color(0xFFF59E0B) else MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Category row
+                Text(
+                    text = "Category:",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.sp
+                )
+                androidx.compose.foundation.lazy.LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(categories.size) { idx ->
+                        val cat = categories[idx]
+                        val isSelected = cat == selectedCategory
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier.clickable { selectedCategory = cat }
+                        ) {
+                            Text(
+                                text = cat,
+                                fontSize = 11.5.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = comments,
+                    onValueChange = { comments = it },
+                    placeholder = { Text("What did you like or what can we improve?") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onSubmitFeedback(rating, selectedCategory, comments) }) {
+                Text("Submit")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
         }
     )
 }

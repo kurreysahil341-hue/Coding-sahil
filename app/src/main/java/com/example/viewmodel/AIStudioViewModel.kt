@@ -83,7 +83,7 @@ class AIStudioViewModel(application: Application) : AndroidViewModel(application
     private val _selectedModel = MutableStateFlow("gemini-2.5-flash")
     val selectedModel: StateFlow<String> = _selectedModel.asStateFlow()
 
-    private val _userApiKey = MutableStateFlow("AIzaSy-STUDIO-DEMO-KEY")
+    private val _userApiKey = MutableStateFlow(com.example.util.ApiKeyManager.getApiKey(application))
     val userApiKey: StateFlow<String> = _userApiKey.asStateFlow()
 
     // "I'm feeling lucky" sample pool
@@ -306,7 +306,10 @@ class AIStudioViewModel(application: Application) : AndroidViewModel(application
     fun setDashboardDialog(show: Boolean) { _showDashboardDialog.value = show }
     fun setDocsDialog(show: Boolean) { _showDocsDialog.value = show }
     fun setSelectedModel(model: String) { _selectedModel.value = model }
-    fun setUserApiKey(key: String) { _userApiKey.value = key }
+    fun setUserApiKey(key: String) {
+        _userApiKey.value = key
+        com.example.util.ApiKeyManager.saveApiKey(getApplication(), key)
+    }
 
     private fun generateCodeSnippet(title: String, previewType: String): String {
         return """
